@@ -65,86 +65,87 @@ This cache is refreshed when first attempting to translate to that language,
 */
 
 class I18n {
-    /** Create a new object, ready to be used.
+	/** Create a new object, ready to be used.
      * 
      * @param {string} language Initial base language to base all translations on.
      * @param {string} baseLanguageKey Key to use for base language overrides. (Default = _base)
      * @throws Exception on invalid parameters.
      */
-    constructor(language, baseLanguageKey = '_base') {
-        this._sanitizeLanguage(language);
-        this._verifyKey(baseLanguageKey);
+	constructor(language, baseLanguageKey = '_base') {
+		this._sanitizeLanguage(language);
+		this._verifyKey(baseLanguageKey);
 
-        this.languages = new Map();
-        this.chains = new Map();
-        this.baseLanguage = language;
-        this.baseLanguageKey = baseLanguageKey;
+		this.languages = new Map();
+		this.chains = new Map();
+		this.baseLanguage = language;
+		this.baseLanguageKey = baseLanguageKey;
 
-        this.dirtyTs = performance.now();
-        this.chainsTs = performance.now();
-    }
+		this.dirtyTs = performance.now();
+		this.chainsTs = performance.now();
+	}
 
-    _verifyLanguageKnown(language) {
-        if (!this.languages.has(language)) {
-            throw 'language unknown';
-        }
-    }
+	_verifyLanguageKnown(language) {
+		if (!this.languages.has(language)) {
+			throw 'language unknown';
+		}
+	}
 
-    _verifyKey(key) {
-        if (typeof (key) == 'string') {
-            return;
-        }
-        throw 'key must be of type string';
-    }
+	_verifyKey(key) {
+		if (typeof (key) == 'string') {
+			return;
+		}
+		throw 'key must be of type string';
+	}
 
-    _verifyKeyKnown(language, key) {
-        this._verifyLanguageKnown(language);
-        this._verifyKey(key);
+	_verifyKeyKnown(language, key) {
+		this._verifyLanguageKnown(language);
+		this._verifyKey(key);
 
-        if (!this.languages.get(language).has(key)) {
-            throw 'key unknown in language';
-        }
-    }
+		if (!this.languages.get(language).has(key)) {
+			throw 'key unknown in language';
+		}
+	}
 
-    _verifyData(data) {
-        if (typeof (data) == 'string') {
-            return;
-        }
-        if (typeof (data) == 'object') {
-            return;
-        }
-        if (data instanceof File) {
-            return;
-        }
-        if (data instanceof Blob) {
-            return;
-        }
-        throw 'data must be of type string, object, File or Blob';
-    }
+	_verifyData(data) {
+		if (typeof (data) == 'string') {
+			return;
+		}
+		if (typeof (data) == 'object') {
+			return;
+		}
+		if (data instanceof File) {
+			return;
+		}
+		if (data instanceof Blob) {
+			return;
+		}
+		throw 'data must be of type string, object, File or Blob';
+	}
 
-    _sanitizeLanguage(language) {
-        try {
-            this._verifyKey(language);
-        } catch (e) {
-            throw 'language must be of type string';
-        }
-        return language.toLowerCase();
-    }
+	_sanitizeLanguage(language) {
+		try {
+			this._verifyKey(language);
+		} catch (e) {
+			throw 'language must be of type string';
+		}
+		return language.toLowerCase();
+	}
 
-    _defaultResolver(language, key, element) {
-        return this.translate(key, language);
-    }
+	_defaultResolver(language, key, element) {
+		element;
+		return this.translate(key, language);
+	}
 
-    _defaultApplier(language, key, translation, element) {
-        try {
-            element.textContent = translation;
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
+	_defaultApplier(language, key, translation, element) {
+		try {
+			element.textContent = translation;
+			return true;
+		} catch (e) {
+			return false;
+		}
+	}
 
-    /** Caches the necessary language chain for translation.
+	/** Caches the necessary language chain for translation.
      * 
      * Creates and returns a language chain required for translation, avoiding
      *  recursive loops that never end in the process. The chain will not 
@@ -166,127 +167,100 @@ class I18n {
      * @param {string} language 
      * @returns {array} Translation chain
      */
-    _cacheChain(language) {
-        // This caches a chain so that we do not have to rebuild this every
-        //  lookup. It is important that there are no recursive loops in this
-        //  code, which means we can't rely on this function to work until the
-        //  cache is completed.
+	_cacheChain(language) {
+		// This caches a chain so that we do not have to rebuild this every
+		//  lookup. It is important that there are no recursive loops in this
+		//  code, which means we can't rely on this function to work until the
+		//  cache is completed.
 
-        // Have there been changes to the timestamp?
-        if (this.chainsTs < this.dirtyTs) {
-            // If yes, clear all chains for rebuilding.
-            this.chainsTs = this.dirtyTs;
-            this.chains.clear();
-        }
+		// Have there been changes to the timestamp?
+		if (this.chainsTs < this.dirtyTs) {
+			// If yes, clear all chains for rebuilding.
+			this.chainsTs = this.dirtyTs;
+			this.chains.clear();
+		}
 
-        // Do we have a chain cached?
-        if (this.chains.has(language)) {
-            // Yes, return the cached chain and go back to translation.
-            return this.chains.get(language);
-        }
+		// Do we have a chain cached?
+		if (this.chains.has(language)) {
+			// Yes, return the cached chain and go back to translation.
+			return this.chains.get(language);
+		}
 
-        // Create a new chain without relying on our own function.
-        let chain = [language]; // Chains always contain the language itself.
+		// Create a new chain without relying on our own function.
+		let chain = new Array();
+		chain.push(language); // Chains always contain the language itself.
 
-        // Now we walk through the chain manually, modifying it as we go.
-        for (let pos = 0; pos < chain.length; pos++) {
-            // Check if the language is loaded, if not skip it.
-            if (!this.languages.has(chain[pos])) {
-                continue;
-            }
+		// Now we walk through the chain manually, modifying it as we go.
+		for (let pos = 0; pos < chain.length; pos++) {
+			// Check if the language is loaded, if not skip it.
+			if (!this.languages.has(chain[pos])) {
+				continue;
+			}
+			let languageMap = this.languages.get(chain[pos]);
 
-            let languageMap = this.languages.get(chain[pos]);
+			// Check if there is a base language override.
+			if (!languageMap.has(this.baseLanguageKey)) {
+				continue;
+			}
+			let baseLanguages = languageMap.get(this.baseLanguageKey);
 
-            // Check if there is a base language override.
-            if (!languageMap.has(this.baseLanguageKey)) {
-                continue;
-            }
+			// Convert to array for for...in.
+			if (typeof (baseLanguages) == 'string') {
+				baseLanguages = [baseLanguages];
+			} else if (!(baseLanguages instanceof Array)) {
+				continue;
+			}
 
-            // If yes, walk it.
-            let baseLanguages = languageMap.get(this.baseLanguageKey);
-            if (typeof (baseLanguages) == 'string') {
-                baseLanguages = [baseLanguages];
-            } else if (typeof (baseLanguages) == 'array') {
+			for (let base of baseLanguages) {
+				base = this._sanitizeLanguage(base);
+				if (!chain.includes(base) && (this.languages.has(base))) {
+					chain.push(base);
+				}
+			}
+            
+			// Append the global base languages if there are no other languages left.
+			if (pos == (chain.length - 1)) {
+				let baseLanguages = this.baseLanguage;
+				if (typeof(this.baseLanguage) == 'string') {
+					baseLanguages = [this.baseLanguage];
+				}
+				for (let base of baseLanguages) {
+					if (!chain.includes(base) && (this.languages.has(base))) {
+						chain.push(base);
+					}
+				}
+			}
+		}
 
-            } else {
-                continue;
-            }
+		// Store.
+		this.chains.set(language, chain);
 
-            for (let baseLanguage in baseLanguages) {
-                baseLanguage = this._sanitizeLanguage(baseLanguage);
-                if (!chain.includes(baseLanguage) && (this.languages.has(baseLanguage))) {
-                    chain = chain.push(baseLanguage);
-                }
-            }
-        }
+		// Return.
+		return chain;
+	}
 
-        // We are now through with the actual language chain, so we now have to check for the base language chain.
-        // The logic for this is identical to the above.
-        let baseChain = this.baseLanguage;
-        if (typeof (this.baseLanguage) == 'string') {
-            baseChain = [baseChain];
-        }
-        for (let pos = 0; pos < baseChain.length; pos++) {
-            // Check if the language is loaded, if not skip it.
-            if (!this.languages.has(baseChain[pos])) {
-                continue;
-            }
-
-            let languageMap = this.languages.get(baseChain[pos]);
-
-            // Check if there is a base language override.
-            if (!languageMap.has(this.baseLanguageKey)) {
-                continue;
-            }
-
-            // If yes, walk it.
-            let baseLanguages = languageMap.get(this.baseLanguageKey);
-            if (typeof (baseLanguages) == 'string') {
-                baseLanguages = [baseLanguages];
-            } else if (typeof (baseLanguages) == 'array') {
-
-            } else {
-                continue;
-            }
-
-            for (let baseLanguage in baseLanguages) {
-                baseLanguage = this._sanitizeLanguage(baseLanguage);
-                if ((!chain.includes(baseLanguage)) && (!baseChain.includes(baseLanguage)) && (this.languages.has(baseLanguage))) {
-                    baseChain = baseChain.push(baseLanguage);
-                    chain.push(baseLanguage);
-                }
-            }
-        }
-
-        // Store.
-        this.chains.set(language, chain);
-
-        // Return.
-        return chain;
-    }
-
-    /** Check if a language is known.
+	/** Check if a language is known.
      * 
      * @param {string} language Name of the language
      * @returns {bool} true if known.
      */
-    hasLanguage(language) {
-        language = this._sanitizeLanguage(language);
-        return this.languages.has(language);
-    }
+	hasLanguage(language) {
+		language = this._sanitizeLanguage(language);
+		return this.languages.has(language);
+	}
 
-    /** Create a new language.
+	/** Create a new language.
      * 
      * @param {string} language Name of the language.
      * @throws Exception on invalid parameters.
      */
-    createLanguage(language) {
-        language = this._sanitizeLanguage(language);
-        this.languages.set(language, new Map());
-        this.dirtyTs = performance.now();
-    }
+	createLanguage(language) {
+		language = this._sanitizeLanguage(language);
+		this.languages.set(language, new Map());
+		this.dirtyTs = performance.now();
+	}
 
-    /** Load a new language.
+	/** Load a new language.
      * 
      * @param {string} language Name of the language.
 	 * @param {File/Blob/object/string} data Data containing a JSON representation of the language.
@@ -294,119 +268,121 @@ class I18n {
      * @returns {Promise}
      * @throws Exception on invalid parameters or invalid data.
      */
-    loadLanguage(language, data, encoding = 'utf-8') {
-        // Verify input.
-        language = this._sanitizeLanguage(language);
-        this._verifyData(data);
+	loadLanguage(language, data, encoding = 'utf-8') {
+		// Verify input.
+		language = this._sanitizeLanguage(language);
+		this._verifyData(data);
 
-        return new Promise(async (resolve, reject) => {
-            try {
-                let json_data;
+		return new Promise(async (resolve, reject) => {
+			try {
+				let json_data;
 
-                // Decode File, Blob and string to JSON object.
-                if ((data instanceof File) || (data instanceof Blob)) {
-                    await new Promise((resolve2, reject2) => {
-                        let freader = new FileReader();
-                        freader.onload((ev) => {
-                            resolve2();
-                        });
-                        freader.onabort((ev) => {
-                            reject2(ev);
-                        });
-                        freader.onerror((ev) => {
-                            reject2(ev);
-                        });
-                        freader.readAsText(data, encoding);
-                    });
-                    json_data = JSON.parse(freader.result);
-                } else if (typeof (data) == 'string') {
-                    json_data = JSON.parse(data);
-                } else if (typeof (data) == 'object') {
-                    json_data = data;
-                }
+				// Decode File, Blob and string to JSON object.
+				if ((data instanceof File) || (data instanceof Blob)) {
+					let freader = new FileReader();
+					await new Promise((resolve2, reject2) => {
+						freader.onload(() => {
+							resolve2();
+						});
+						freader.onabort((ev) => {
+							reject2(ev);
+						});
+						freader.onerror((ev) => {
+							reject2(ev);
+						});
+						freader.readAsText(data, encoding);
+					});
+					json_data = JSON.parse(freader.result);
+				} else if (typeof (data) == 'string') {
+					json_data = JSON.parse(data);
+				} else if (typeof (data) == 'object') {
+					json_data = data;
+				}
 
-                let language_map = new Map();
-                for (let key in json_data) {
-                    language_map.set(key, json_data[key]);
-                }
+				let language_map = new Map();
+				for (let key in json_data) {
+					language_map.set(key, json_data[key]);
+				}
 
-                this.languages.set(language, language_map);
-                this.dirtyTs = performance.now();
-                resolve(language);
-            } catch (e) {
-                reject(e);
-                return;
-            }
-        });
-    }
+				this.languages.set(language, language_map);
+				this.dirtyTs = performance.now();
+				resolve(language);
+			} catch (e) {
+				reject(e);
+				return;
+			}
+		});
+	}
 
-    /** Save a language.
+	/** Save a language.
      * 
      * @param {string} language Name of the language.
      * @returns {Promise} Promise that eventually returns the JSON data of the language.
      * @throws Exception on invalid parameters and missing language.
      */
-    saveLanguage(language) {
-        language = this._sanitizeLanguage(language);
-        this._verifyLanguageKnown(language);
+	saveLanguage(language) {
+		language = this._sanitizeLanguage(language);
+		this._verifyLanguageKnown(language);
 
-        return new Promise((resolve, reject) => {
-            this._verifyLanguageKnown(language);
+		return new Promise((resolve, reject) => {
+			reject;
+			this._verifyLanguageKnown(language);
 
-            let language_data = {};
-            let language_map = this.languages.get(language);
-            language_map.forEach((value, key, map) => {
-                language_data[key] = value;
-            });
-            let json_data = JSON.stringify(language_data);
-            resolve(json_data);
-        });
-    }
+			let language_data = {};
+			let language_map = this.languages.get(language);
+			language_map.forEach((value, key, map) => {
+				map;
+				language_data[key] = value;
+			});
+			let json_data = JSON.stringify(language_data);
+			resolve(json_data);
+		});
+	}
 
-    /** Destroy/unload a language.
+	/** Destroy/unload a language.
      * 
      * @param {string} language Name of the language.
      * @throws Exception on invalid parameters and missing language.
      */
-    destroyLanguage(language) {
-        language = this._sanitizeLanguage(language);
-        this._verifyLanguageKnown(language);
+	destroyLanguage(language) {
+		language = this._sanitizeLanguage(language);
+		this._verifyLanguageKnown(language);
 
-        this.languages.delete(language);
-        this.dirtyTs = performance.now();
-    }
+		this.languages.delete(language);
+		this.dirtyTs = performance.now();
+	}
 
-    /** Clear a key from a language.
+	/** Clear a key from a language.
      * 
      * @param {string} language Language to edit.
      * @param {string} key Key to clear.
      * @return {bool} true on success.
      * @throws Exception on invalid parameters and missing language.
      */
-    clearKey(language, key) {
-        // Verify and sanitize input.
-        language = this._sanitizeLanguage(language);
-        this._verifyKey(key);
+	clearKey(language, key) {
+		// Verify and sanitize input.
+		language = this._sanitizeLanguage(language);
+		this._verifyKey(key);
 
-        // Check if language exists.
-        this._verifyLanguageKnown(language);
+		// Check if language exists.
+		this._verifyLanguageKnown(language);
 
-        // Delete key if exists.
-        let language_map = this.languages.get(language);
-        if (!language_map.has(key)) {
-            return false;
-        }
-        language_map.delete(key);
+		// Delete key if exists.
+		let language_map = this.languages.get(language);
+		if (!language_map.has(key)) {
+			return false;
+		}
+		language_map.delete(key);
 
-        // If the key was the base language key, set dirty timestamp.
-        if (key == this.baseLanguageKey) {
-            this.dirtyTs = performance.now();
-        }
+		// If the key was the base language key, set dirty timestamp.
+		if (key == this.baseLanguageKey) {
+			this.dirtyTs = performance.now();
+		}
 
-        return true;
-    }
+		return true;
+	}
 
-    /** Set a key in a language
+	/** Set a key in a language
      * 
      * @param {string} language Language to edit.
      * @param {string} key Key to set.
@@ -415,73 +391,73 @@ class I18n {
      * @return {bool} true on success.
      * @throws Exception on invalid parameters and missing language.
      */
-    setKey(language, key, value, force = true) {
-        // Verify and sanitize input.
-        language = this._sanitizeLanguage(language);
-        this._verifyKey(key);
+	setKey(language, key, value, force = true) {
+		// Verify and sanitize input.
+		language = this._sanitizeLanguage(language);
+		this._verifyKey(key);
 
-        // Check if language exists.
-        this._verifyLanguageKnown(language);
+		// Check if language exists.
+		this._verifyLanguageKnown(language);
 
-        // Set key.
-        let language_map = this.languages.get(language);
-        if ((language_map.has(key)) && !force) {
-            return false;
-        }
-        language_map.set(key, value);
+		// Set key.
+		let language_map = this.languages.get(language);
+		if ((language_map.has(key)) && !force) {
+			return false;
+		}
+		language_map.set(key, value);
 
-        // If the key was the base language key, set dirty timestamp.
-        if (key == this.baseLanguageKey) {
-            this.dirtyTs = performance.now();
-        }
+		// If the key was the base language key, set dirty timestamp.
+		if (key == this.baseLanguageKey) {
+			this.dirtyTs = performance.now();
+		}
 
-        return true;
-    }
+		return true;
+	}
 
-    /** Get a key in a language
+	/** Get a key in a language
      * 
      * @param {string} language 
      * @param {string} key 
      * @return {*} the value
      * @throws Exception on invalid parameters, missing language and missing key.
      */
-    getKey(language, key) {
-        // Verify and sanitize input.
-        language = this._sanitizeLanguage(language);
-        this._verifyKeyKnown(language, key);
+	getKey(language, key) {
+		// Verify and sanitize input.
+		language = this._sanitizeLanguage(language);
+		this._verifyKeyKnown(language, key);
 
-        // Get Key
-        let language_map = this.languages.get(language);
-        return language_map.get(key);
-    }
+		// Get Key
+		let language_map = this.languages.get(language);
+		return language_map.get(key);
+	}
 
-    /** Translate a single string to any loaded language.
+	/** Translate a single string to any loaded language.
      * 
      * @param {string} key String to translate
      * @param {string} language Language to translate to
      * @return {string} Translated string, or if failed the string plus the language appended.
      * @throws Exception on invalid parameters.
      */
-    translate(key, language) {
-        // Verify and sanitize input.
-        language = this._sanitizeLanguage(language);
-        this._verifyKey(key);
+	translate(key, language) {
+		// Verify and sanitize input.
+		language = this._sanitizeLanguage(language);
+		this._verifyKey(key);
 
-        // Translate using the translation chain.
-        let chain = this._cacheChain(language);
-        let translated = key;
-        for (let language of chain) {
-            let languageMap = this.languages.get(language);
-            if (languageMap.has(key)) {
-                translated = languageMap.get(key);
-                break;
-            }
-        }
+		// Translate using the translation chain.
+		let chain = this._cacheChain(language);
+		let translated = key;
+		for (let language of chain) {
+			let languageMap = this.languages.get(language);
+			if (languageMap.has(key)) {
+				translated = languageMap.get(key);
+				break;
+			}
+		}
 
-        return translated;
-    }
+		return translated;
+	}
 
-    /** Automatically translate the entire page using the specified property on elements.
+	/** Automatically translate the entire page using the specified property on elements.
      * 
      * @param {string} language Language to translate to
      * @param {string} property Property to search for (default 'data-i18n')
@@ -490,42 +466,42 @@ class I18n {
      * @returns {Promise} resolved when successful, rejected if applier returns false.
      * @throws Exception on invalid parameters.
      */
-    domTranslate(language, property = 'data-i18n', resolver = undefined, applier = undefined) {
-        language = this._sanitizeLanguage(language);
-        if ((resolver != undefined) && (typeof (resolver) != 'function')) {
-            throw 'resolver must be a function';
-        } else if (resolver == undefined) {
-            let self = this;
-            resolver = (language, key, el) => {
-                return self._defaultResolver(language, key, el);
-            };
-        }
-        if ((applier != undefined) && (typeof (applier) != 'function')) {
-            throw 'applier must be a function';
-        } else if (applier == undefined) {
-            let self = this;
-            applier = (language, key, translation, el) => {
-                return self._defaultApplier(language, key, translation, el);
-            };
-        }
+	domTranslate(language, property = 'data-i18n', resolver = undefined, applier = undefined) {
+		language = this._sanitizeLanguage(language);
+		if ((resolver != undefined) && (typeof (resolver) != 'function')) {
+			throw 'resolver must be a function';
+		} else if (resolver == undefined) {
+			let self = this;
+			resolver = (language, key, el) => {
+				return self._defaultResolver(language, key, el);
+			};
+		}
+		if ((applier != undefined) && (typeof (applier) != 'function')) {
+			throw 'applier must be a function';
+		} else if (applier == undefined) {
+			let self = this;
+			applier = (language, key, translation, el) => {
+				return self._defaultApplier(language, key, translation, el);
+			};
+		}
 
-        return new Promise((resolve, reject) => {
-            let els = document.querySelectorAll(`[${property}]`);
-            for (let el of els) {
-                let key = el.getAttribute(property);
-                if (!applier(language, key, resolver(language, key, el), el)) {
-                    reject();
-                    return;
-                }
-            }
-            resolve();
-        });
-    }
+		return new Promise((resolve, reject) => {
+			let els = document.querySelectorAll(`[${property}]`);
+			for (let el of els) {
+				let key = el.getAttribute(property);
+				if (!applier(language, key, resolver(language, key, el), el)) {
+					reject();
+					return;
+				}
+			}
+			resolve();
+		});
+	}
 }
 
 // Compatible with Node.js and Browsers
 if (typeof (module) != 'undefined') {
-    module.exports = exports = {
-        'I18n': I18n
-    }
+	module.exports = exports = {
+		'I18n': I18n
+	};
 }
