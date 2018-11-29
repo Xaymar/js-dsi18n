@@ -1,3 +1,5 @@
+'use strict';
+
 /*
     Internationalization Class for JavaScript
     Copyright (C) 2018 Michael Fabian 'Xaymar' Dirks <info@xaymar.com>
@@ -273,44 +275,50 @@ class I18n {
 		language = this._sanitizeLanguage(language);
 		this._verifyData(data);
 
-		return new Promise(async (resolve, reject) => {
-			try {
-				let json_data;
-
-				// Decode File, Blob and string to JSON object.
-				if ((data instanceof File) || (data instanceof Blob)) {
+		return new Promise((resolve, reject) => {
+			// Decode data from various forms.
+			let decodePromise;
+			if ((data instanceof File) || (data instanceof Blob)) {
+				decodePromise = new Promise((fileResolve, fileReject) => {
 					let freader = new FileReader();
-					await new Promise((resolve2, reject2) => {
-						freader.onload(() => {
-							resolve2();
-						});
-						freader.onabort((ev) => {
-							reject2(ev);
-						});
-						freader.onerror((ev) => {
-							reject2(ev);
-						});
-						freader.readAsText(data, encoding);
+					freader.onload(() => {
+						fileResolve(JSON.parse(freader.result));
 					});
-					json_data = JSON.parse(freader.result);
-				} else if (typeof (data) == 'string') {
-					json_data = JSON.parse(data);
-				} else if (typeof (data) == 'object') {
-					json_data = data;
-				}
+					freader.onabort((ev) => {
+						fileReject(ev);
+					});
+					freader.onerror((ev) => {
+						fileReject(ev);
+					});
+					freader.readAsText(data, encoding);
+				});
+			} else if (typeof(data) == 'string') {
+				decodePromise = new Promise((parseResolve, parseReject) => {
+					parseReject;
+					parseResolve(JSON.parse(data));
+				});
+			} else if (typeof(data) == 'object') {
+				decodePromise = new Promise((passResolve, passReject) => {
+					passReject;
+					passResolve(data);
+				});
+			} else {
+				reject('invalid data');
+			}
 
+			// Load Data
+			decodePromise.then((result) => {
 				let language_map = new Map();
-				for (let key in json_data) {
-					language_map.set(key, json_data[key]);
+				for (let key in result) {
+					language_map.set(key, result[key]);
 				}
 
 				this.languages.set(language, language_map);
 				this.dirtyTs = performance.now();
 				resolve(language);
-			} catch (e) {
-				reject(e);
-				return;
-			}
+			}, (reason) => {
+				reject(reason);
+			});
 		});
 	}
 
