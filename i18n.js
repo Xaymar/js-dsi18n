@@ -265,6 +265,16 @@ class I18n {
         return chain;
     }
 
+    /** Check if a language is known.
+     * 
+     * @param {string} language Name of the language
+     * @returns {bool} true if known.
+     */
+    hasLanguage(language) {
+        language = this._sanitizeLanguage(language);
+        return this.languages.has(language);
+    }
+
     /** Create a new language.
      * 
      * @param {string} language Name of the language.
