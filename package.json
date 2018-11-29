@@ -1,7 +1,7 @@
 {
   "name": "i18n",
   "version": "0.0.1",
-  "description": "Simple Internationalization provider for JavaScript",
+  "description": "Simple Internationalization (I18n) Provider",
   "main": "i18n.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
