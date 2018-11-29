@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset='utf-8'>
+    <title>i18n-js - Sample</title>
+</head>
+
+<body>
+    <header class="header">
+        <select id="language">
+        </select>
+    </header>
+    <div class="content">
+        <h1 class="title" data-i18n="title"></h1>
+        <p data-i18n="p1"></p>
+        <p data-i18n="p2"></p>
+    </div>
+</body>
+
+<script src='../i18n.js'></script>
+<script>
+    let languages = {
+        enUS: 'English (American)',
+        enGB: 'English (British)',
+        deDE: 'Deutsch',
+    };
+    let translations = {
+        enUS: {
+            title: 'Hello World',
+            p1: 'This is a sample of the capabilities of i18n.js by Xaymar. It can translate any kind of data in real time, as long as some kind of key value system is enough.',
+            p2: 'In case you were wondering, you can change the language with the dropdown.',
+            language: 'Language',
+        },
+        enGB: {
+            _base: 'enUS',
+        },
+        deDE: {
+            _base: 'enGB',
+            title: 'Hallo Welt',
+            p1: 'Dies ist ein Beispiel der Fähigkeiten von i18n.js, geschrieben von Xaymar. Es kann alle möglichen Daten in Echtzeitübersetzen, sofern ein Schlüssel-Wert-System genug ist.',
+            p2: 'Du kannst die Sprache mit dem Drop-Down ändern, falls du dich gewundert hattest.',
+            language: 'Sprache',
+        }
+    };
+
+    let defaultLang = 'enUS';
+    let i18n = {
+        language: new I18n('default'),
+        content: new I18n(defaultLang)
+    };
+
+    async function contentSwitchLanguage(language) {
+        if (!i18n.content.hasLanguage(language)) {
+            await i18n.content.loadLanguage(language, translations[language]);
+            console.log('loaded language %s', language);
+        }
+        await i18n.content.domTranslate(language);
+        console.log('translated page to language %s', language);
+    }
+
+    // Load default language
+    let contentPromise = i18n.content.loadLanguage(defaultLang, translations[defaultLang]);
+    let languagePromise = i18n.language.loadLanguage('default', languages);
+
+    // Fill Language Input with values, and hook it up to change the site language
+    let languageInput = document.getElementById('language');
+    for (let language in languages) {
+        let el = document.createElement('option');
+        el.dataset['language'] = language;
+        if (language == defaultLang) {
+            el.defaultSelected = true;
+        }
+        languageInput.appendChild(el);
+    }
+    languageInput.onchange = async (ev) => {
+        languageInput.disabled = true;
+        await contentSwitchLanguage(ev.target.selectedOptions[0].dataset['language']);
+        languageInput.disabled = false;
+    };
+
+    // Log language promise completion.
+    languagePromise.then(async (result) => {
+        console.log('I18n for Language field loaded.');
+        await i18n.language.domTranslate('default', 'data-language');
+        console.log('I18n for Language field ready.');
+    });
+    contentPromise.then(async (result) => {
+        await i18n.content.domTranslate(defaultLang);
+
+    });
+</script>
+
+</html>
