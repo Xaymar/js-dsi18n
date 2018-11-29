@@ -85,6 +85,25 @@ class I18n {
 		this.dirtyTs = performance.now();
 		this.chainsTs = performance.now();
 	}
+
+	/** Update the global base language.
+	 * 
+	 * @param {string} language 
+	 */
+	setBaseLanguage(language) {
+		this._sanitizeLanguage(language);
+		this.baseLanguage = language;
+		this.dirtyTs = performance.now();
+	}
+
+	/** Retrieve the global base language.
+	 * 
+	 * @return {string} name of base language.
+	 */
+	getBaseLanguage() {
+		return this.baseLanguage;
+	}
+
 	/** Check if a language is known.
      * 
      * @param {string} language Name of the language
@@ -351,7 +370,6 @@ class I18n {
 	}
 	
 	// Private Functions
-
 	_verifyLanguageKnown(language) {
 		if (!this.languages.has(language)) {
 			throw 'language unknown';
@@ -430,7 +448,15 @@ class I18n {
      *  early, a recursive lookup is prevented here.
      * 
      * Example:
-     *  
+     *  de-BE +- de-DE - en-GB - en-US 
+	 *        +- en-GB - en-US
+	 *        +- de-AU - de-DE - en-GB - en-US
+	 *        +- en-US
+	 * Result: [de-Be, de-DE, en-GB, de-AU, en-US]
+	 * Explanation: de-BE depends on [de-DE, en-GB, de-AU, en-US], resolving 
+	 *  de-DE returns en-GB (if loaded), which we already have. en-GB resolves
+	 *  to en-US, which we also already have. de-AU resolves to de-DE, also 
+	 *  known. And finally en-US resolves to nothing as the global base language.
      * 
      * @param {string} language 
      * @returns {array} Translation chain
