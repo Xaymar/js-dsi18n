@@ -64,10 +64,6 @@ This cache is refreshed when first attempting to translate to that language,
 
 */
 
-let group = 'i18n';
-let group_style = 'font-weight: bold;';
-let text_style = 'font-weight: inherit;';
-
 class I18n {
     /** Create a new object, ready to be used.
      * 
@@ -78,8 +74,6 @@ class I18n {
     constructor(language, baseLanguageKey = '_base') {
         this._sanitizeLanguage(language);
         this._verifyKey(baseLanguageKey);
-
-        console.log('%c[%s]%c Initializing ...', group_style, group, text_style);
 
         this.languages = new Map();
         this.chains = new Map();
@@ -186,9 +180,9 @@ class I18n {
         }
 
         // Do we have a chain cached?
-        if (this.languageChains.has(language)) {
+        if (this.chains.has(language)) {
             // Yes, return the cached chain and go back to translation.
-            return this.languageChains.get(language);
+            return this.chains.get(language);
         }
 
         // Create a new chain without relying on our own function.
@@ -218,8 +212,9 @@ class I18n {
                 continue;
             }
 
-            for (baseLanguage in baseLanguages) {
-                if (!chain.includes(baseLanguage)) {
+            for (let baseLanguage in baseLanguages) {
+                baseLanguage = this._sanitizeLanguage(baseLanguage);
+                if (!chain.includes(baseLanguage) && (this.languages.has(baseLanguage))) {
                     chain = chain.push(baseLanguage);
                 }
             }
@@ -254,15 +249,14 @@ class I18n {
                 continue;
             }
 
-            for (baseLanguage in baseLanguages) {
-                if ((!chain.includes(baseLanguage)) && (!baseChain.includes(baseLanguage))) {
+            for (let baseLanguage in baseLanguages) {
+                baseLanguage = this._sanitizeLanguage(baseLanguage);
+                if ((!chain.includes(baseLanguage)) && (!baseChain.includes(baseLanguage)) && (this.languages.has(baseLanguage))) {
                     baseChain = baseChain.push(baseLanguage);
+                    chain.push(baseLanguage);
                 }
             }
         }
-
-        // Concat normal walk and base chain walk.
-        chain = chain.concat(baseChain);
 
         // Store.
         this.chains.set(language, chain);
@@ -278,14 +272,7 @@ class I18n {
      */
     createLanguage(language) {
         language = this._sanitizeLanguage(language);
-
-        console.debug('%c[%s]%c Creating language "%s"...',
-            group_style, group, text_style,
-            language);
         this.languages.set(language, new Map());
-        console.debug('%c[%s]%c Created language "%s".',
-            group_style, group, text_style,
-            language);
         this.dirtyTs = performance.now();
     }
 
@@ -300,13 +287,9 @@ class I18n {
     loadLanguage(language, data, encoding = 'utf-8') {
         // Verify input.
         language = this._sanitizeLanguage(language);
-        _verifyData(data);
+        this._verifyData(data);
 
         return new Promise(async (resolve, reject) => {
-            console.debug('%c[%s]%c Loading language "%s"...',
-                group_style, group, text_style,
-                language);
-
             try {
                 let json_data;
 
@@ -333,20 +316,14 @@ class I18n {
                 }
 
                 let language_map = new Map();
-                for (key in json_data) {
+                for (let key in json_data) {
                     language_map.set(key, json_data[key]);
                 }
 
                 this.languages.set(language, language_map);
                 this.dirtyTs = performance.now();
-
-                console.debug('%c[%s]%c Loaded language "%s".',
-                    group_style, group, text_style, language);
                 resolve(language);
             } catch (e) {
-                console.error('%c[%s]%c Failed to load language "%s": %o',
-                    group_style, group, text_style,
-                    language, e);
                 reject(e);
                 return;
             }
@@ -364,10 +341,6 @@ class I18n {
         this._verifyLanguageKnown(language);
 
         return new Promise((resolve, reject) => {
-            console.debug('%c[%s]%c Saving language "%s"...',
-                group_style, group, text_style,
-                language);
-
             this._verifyLanguageKnown(language);
 
             let language_data = {};
@@ -376,10 +349,6 @@ class I18n {
                 language_data[key] = value;
             });
             let json_data = JSON.stringify(language_data);
-
-            console.debug('%c[%s]%c Saved language "%s".',
-                group_style, group, text_style,
-                language);
             resolve(json_data);
         });
     }
@@ -393,16 +362,8 @@ class I18n {
         language = this._sanitizeLanguage(language);
         this._verifyLanguageKnown(language);
 
-        console.debug('%c[%s]%c Destroying language "%s"...',
-            group_style, group, text_style,
-            language);
-
         this.languages.delete(language);
         this.dirtyTs = performance.now();
-
-        console.debug('%c[%s]%c Destroyed language "%s".',
-            group_style, group, text_style,
-            language);
     }
 
     /** Clear a key from a language.
@@ -499,7 +460,7 @@ class I18n {
         // Translate using the translation chain.
         let chain = this._cacheChain(language);
         let translated = key;
-        for (language in chain) {
+        for (let language of chain) {
             let languageMap = this.languages.get(language);
             if (languageMap.has(key)) {
                 translated = languageMap.get(key);
@@ -519,20 +480,26 @@ class I18n {
      * @returns {Promise} resolved when successful, rejected if applier returns false.
      * @throws Exception on invalid parameters.
      */
-    domTranslate(language, property = 'data-i18n', resolver = this._defaultResolver, applier = this._defaultApplier) {
+    domTranslate(language, property = 'data-i18n', resolver = undefined, applier = undefined) {
         language = this._sanitizeLanguage(language);
-        if (typeof (resolver) != 'function') {
+        if ((resolver != undefined) && (typeof (resolver) != 'function')) {
             throw 'resolver must be a function';
+        } else if (resolver == undefined) {
+            let self = this;
+            resolver = (language, key, el) => {
+                return self._defaultResolver(language, key, el);
+            };
         }
-        if (typeof (applier) != 'function') {
+        if ((applier != undefined) && (typeof (applier) != 'function')) {
             throw 'applier must be a function';
+        } else if (applier == undefined) {
+            let self = this;
+            applier = (language, key, translation, el) => {
+                return self._defaultApplier(language, key, translation, el);
+            };
         }
 
         return new Promise((resolve, reject) => {
-            console.debug('%c[%s]%c Starting DOM translation to language "%s" using property "%s"...',
-                group_style, group, text_style,
-                language, property);
-
             let els = document.querySelectorAll(`[${property}]`);
             for (let el of els) {
                 let key = el.getAttribute(property);
@@ -541,10 +508,14 @@ class I18n {
                     return;
                 }
             }
-            console.log('%c[%s]%c Translated to language "%s".',
-                group_style, group, text_style,
-                language);
             resolve();
         });
+    }
+}
+
+// Compatible with Node.js and Browsers
+if (typeof (module) != 'undefined') {
+    module.exports = exports = {
+        'I18n': I18n
     }
 }
