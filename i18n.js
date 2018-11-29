@@ -85,162 +85,6 @@ class I18n {
 		this.dirtyTs = performance.now();
 		this.chainsTs = performance.now();
 	}
-
-	_verifyLanguageKnown(language) {
-		if (!this.languages.has(language)) {
-			throw 'language unknown';
-		}
-	}
-
-	_verifyKey(key) {
-		if (typeof (key) == 'string') {
-			return;
-		}
-		throw 'key must be of type string';
-	}
-
-	_verifyKeyKnown(language, key) {
-		this._verifyLanguageKnown(language);
-		this._verifyKey(key);
-
-		if (!this.languages.get(language).has(key)) {
-			throw 'key unknown in language';
-		}
-	}
-
-	_verifyData(data) {
-		if (typeof (data) == 'string') {
-			return;
-		}
-		if (typeof (data) == 'object') {
-			return;
-		}
-		if (data instanceof File) {
-			return;
-		}
-		if (data instanceof Blob) {
-			return;
-		}
-		throw 'data must be of type string, object, File or Blob';
-	}
-
-	_sanitizeLanguage(language) {
-		try {
-			this._verifyKey(language);
-		} catch (e) {
-			throw 'language must be of type string';
-		}
-		return language.toLowerCase();
-	}
-
-	_defaultResolver(language, key, element) {
-		element;
-		return this.translate(key, language);
-	}
-
-	_defaultApplier(language, key, translation, element) {
-		try {
-			element.textContent = translation;
-			return true;
-		} catch (e) {
-			return false;
-		}
-	}
-
-	/** Caches the necessary language chain for translation.
-     * 
-     * Creates and returns a language chain required for translation, avoiding
-     *  recursive loops that never end in the process. The chain will not 
-     *  evalute the entire branch first, instead it will check all branches
-     *  and then list the childs of those branches. This is an expensive
-     *  operation and should only be done once on every language update.
-     * 
-     * Example:
-     *  de-DE +- en-GB - en-US - de-DE (- en-GB, en-US, ... [recursive])
-     *        \- en-US - de-DE (- en-GB, en-US, ... [recursive])
-     * Result: [de-DE, en-GB, en-US]
-     * Explanation: de-DE depends on both en-GB and en-US, and will check both
-     *  before considering the next branch. Since all dependencies are resolved
-     *  early, a recursive lookup is prevented here.
-     * 
-     * Example:
-     *  
-     * 
-     * @param {string} language 
-     * @returns {array} Translation chain
-     */
-	_cacheChain(language) {
-		// This caches a chain so that we do not have to rebuild this every
-		//  lookup. It is important that there are no recursive loops in this
-		//  code, which means we can't rely on this function to work until the
-		//  cache is completed.
-
-		// Have there been changes to the timestamp?
-		if (this.chainsTs < this.dirtyTs) {
-			// If yes, clear all chains for rebuilding.
-			this.chainsTs = this.dirtyTs;
-			this.chains.clear();
-		}
-
-		// Do we have a chain cached?
-		if (this.chains.has(language)) {
-			// Yes, return the cached chain and go back to translation.
-			return this.chains.get(language);
-		}
-
-		// Create a new chain without relying on our own function.
-		let chain = new Array();
-		chain.push(language); // Chains always contain the language itself.
-
-		// Now we walk through the chain manually, modifying it as we go.
-		for (let pos = 0; pos < chain.length; pos++) {
-			// Check if the language is loaded, if not skip it.
-			if (!this.languages.has(chain[pos])) {
-				continue;
-			}
-			let languageMap = this.languages.get(chain[pos]);
-
-			// Check if there is a base language override.
-			if (!languageMap.has(this.baseLanguageKey)) {
-				continue;
-			}
-			let baseLanguages = languageMap.get(this.baseLanguageKey);
-
-			// Convert to array for for...in.
-			if (typeof (baseLanguages) == 'string') {
-				baseLanguages = [baseLanguages];
-			} else if (!(baseLanguages instanceof Array)) {
-				continue;
-			}
-
-			for (let base of baseLanguages) {
-				base = this._sanitizeLanguage(base);
-				if (!chain.includes(base) && (this.languages.has(base))) {
-					chain.push(base);
-				}
-			}
-            
-			// Append the global base languages if there are no other languages left.
-			if (pos == (chain.length - 1)) {
-				let baseLanguages = this.baseLanguage;
-				if (typeof(this.baseLanguage) == 'string') {
-					baseLanguages = [this.baseLanguage];
-				}
-				for (let base of baseLanguages) {
-					if (!chain.includes(base) && (this.languages.has(base))) {
-						chain.push(base);
-					}
-				}
-			}
-		}
-
-		// Store.
-		this.chains.set(language, chain);
-
-		// Return.
-		return chain;
-	}
-
 	/** Check if a language is known.
      * 
      * @param {string} language Name of the language
@@ -504,6 +348,163 @@ class I18n {
 			}
 			resolve();
 		});
+	}
+	
+	// Private Functions
+
+	_verifyLanguageKnown(language) {
+		if (!this.languages.has(language)) {
+			throw 'language unknown';
+		}
+	}
+
+	_verifyKey(key) {
+		if (typeof (key) == 'string') {
+			return;
+		}
+		throw 'key must be of type string';
+	}
+
+	_verifyKeyKnown(language, key) {
+		this._verifyLanguageKnown(language);
+		this._verifyKey(key);
+
+		if (!this.languages.get(language).has(key)) {
+			throw 'key unknown in language';
+		}
+	}
+
+	_verifyData(data) {
+		if (typeof (data) == 'string') {
+			return;
+		}
+		if (typeof (data) == 'object') {
+			return;
+		}
+		if (data instanceof File) {
+			return;
+		}
+		if (data instanceof Blob) {
+			return;
+		}
+		throw 'data must be of type string, object, File or Blob';
+	}
+
+	_sanitizeLanguage(language) {
+		try {
+			this._verifyKey(language);
+		} catch (e) {
+			throw 'language must be of type string';
+		}
+		return language.toLowerCase();
+	}
+
+	_defaultResolver(language, key, element) {
+		element;
+		return this.translate(key, language);
+	}
+
+	_defaultApplier(language, key, translation, element) {
+		try {
+			element.textContent = translation;
+			return true;
+		} catch (e) {
+			return false;
+		}
+	}
+
+	/** Caches the necessary language chain for translation.
+     * 
+     * Creates and returns a language chain required for translation, avoiding
+     *  recursive loops that never end in the process. The chain will not 
+     *  evalute the entire branch first, instead it will check all branches
+     *  and then list the childs of those branches. This is an expensive
+     *  operation and should only be done once on every language update.
+     * 
+     * Example:
+     *  de-DE +- en-GB - en-US - de-DE (- en-GB, en-US, ... [recursive])
+     *        \- en-US - de-DE (- en-GB, en-US, ... [recursive])
+     * Result: [de-DE, en-GB, en-US]
+     * Explanation: de-DE depends on both en-GB and en-US, and will check both
+     *  before considering the next branch. Since all dependencies are resolved
+     *  early, a recursive lookup is prevented here.
+     * 
+     * Example:
+     *  
+     * 
+     * @param {string} language 
+     * @returns {array} Translation chain
+     */
+	_cacheChain(language) {
+		// This caches a chain so that we do not have to rebuild this every
+		//  lookup. It is important that there are no recursive loops in this
+		//  code, which means we can't rely on this function to work until the
+		//  cache is completed.
+
+		// Have there been changes to the timestamp?
+		if (this.chainsTs < this.dirtyTs) {
+			// If yes, clear all chains for rebuilding.
+			this.chainsTs = this.dirtyTs;
+			this.chains.clear();
+		}
+
+		// Do we have a chain cached?
+		if (this.chains.has(language)) {
+			// Yes, return the cached chain and go back to translation.
+			return this.chains.get(language);
+		}
+
+		// Create a new chain without relying on our own function.
+		let chain = new Array();
+		chain.push(language); // Chains always contain the language itself.
+
+		// Now we walk through the chain manually, modifying it as we go.
+		for (let pos = 0; pos < chain.length; pos++) {
+			// Check if the language is loaded, if not skip it.
+			if (!this.languages.has(chain[pos])) {
+				continue;
+			}
+			let languageMap = this.languages.get(chain[pos]);
+
+			// Check if there is a base language override.
+			if (!languageMap.has(this.baseLanguageKey)) {
+				continue;
+			}
+			let baseLanguages = languageMap.get(this.baseLanguageKey);
+
+			// Convert to array for for...in.
+			if (typeof (baseLanguages) == 'string') {
+				baseLanguages = [baseLanguages];
+			} else if (!(baseLanguages instanceof Array)) {
+				continue;
+			}
+
+			for (let base of baseLanguages) {
+				base = this._sanitizeLanguage(base);
+				if (!chain.includes(base) && (this.languages.has(base))) {
+					chain.push(base);
+				}
+			}
+            
+			// Append the global base languages if there are no other languages left.
+			if (pos == (chain.length - 1)) {
+				let baseLanguages = this.baseLanguage;
+				if (typeof(this.baseLanguage) == 'string') {
+					baseLanguages = [this.baseLanguage];
+				}
+				for (let base of baseLanguages) {
+					if (!chain.includes(base) && (this.languages.has(base))) {
+						chain.push(base);
+					}
+				}
+			}
+		}
+
+		// Store.
+		this.chains.set(language, chain);
+
+		// Return.
+		return chain;
 	}
 }
 
