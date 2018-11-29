@@ -67,17 +67,17 @@ This cache is refreshed when first attempting to translate to that language,
 class I18n {
 	/** Create a new object, ready to be used.
      * 
-     * @param {string} language Initial base language to base all translations on.
+     * @param {string} defaultLanguage Initial base language to base all translations on.
      * @param {string} baseLanguageKey Key to use for base language overrides. (Default = _base)
      * @throws Exception on invalid parameters.
      */
-	constructor(language, baseLanguageKey = '_base') {
-		this._sanitizeLanguage(language);
+	constructor(defaultLanguage, baseLanguageKey = '_base') {
+		this._sanitizeLanguage(defaultLanguage);
 		this._verifyKey(baseLanguageKey);
 
 		this.languages = new Map();
 		this.chains = new Map();
-		this.baseLanguage = language;
+		this.baseLanguage = defaultLanguage;
 		this.baseLanguageKey = baseLanguageKey;
 
 		this.dirtyTs = performance.now();
