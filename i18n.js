@@ -66,6 +66,26 @@ This cache is refreshed when first attempting to translate to that language,
 
 */
 
+/** 
+ * 
+ * # Events
+ * Events are called with multiple parameters, as described below. They can
+ *  be used for a variety of things, for example to react to failures or
+ *  other errors that are otherwise unrecoverable.
+ * 
+ * ## Event: missingKey
+ * Called if a key is found to be missing in a language.
+ * @param {string} key Key that was determined to be missing.
+ * @param {string} language Language that key was not found in.
+ * 
+ * ## Event: missingLanguage
+ * Called if a language is found to be missing.
+ * @param {string} language Language that was determined to be missing.
+ * 
+ * ## Event: change
+ * Called whenever a change is made to the content of the object.
+ * 
+ */
 class I18n {
 	/** Create a new object, ready to be used.
      * 
@@ -82,6 +102,12 @@ class I18n {
 		this.baseLanguage = defaultLanguage;
 		this.baseLanguageKey = baseLanguageKey;
 
+		this.events = {
+			'missingkey': new Map(),
+			'missinglanguage': new Map(),
+			'change': new Map(),
+		};
+
 		this.dirtyTs = performance.now();
 		this.chainsTs = performance.now();
 	}
@@ -94,6 +120,9 @@ class I18n {
 		this._sanitizeLanguage(language);
 		this.baseLanguage = language;
 		this.dirtyTs = performance.now();
+
+		// Event: onchange
+		this._callEvent('change');
 	}
 
 	/** Retrieve the global base language.
@@ -123,6 +152,9 @@ class I18n {
 		language = this._sanitizeLanguage(language);
 		this.languages.set(language, new Map());
 		this.dirtyTs = performance.now();
+
+		// Event: onchange
+		this._callEvent('change');
 	}
 
 	/** Load a new language.
@@ -155,12 +187,12 @@ class I18n {
 					});
 					freader.readAsText(data, encoding);
 				});
-			} else if (typeof(data) == 'string') {
+			} else if (typeof (data) == 'string') {
 				decodePromise = new Promise((parseResolve, parseReject) => {
 					parseReject;
 					parseResolve(JSON.parse(data));
 				});
-			} else if (typeof(data) == 'object') {
+			} else if (typeof (data) == 'object') {
 				decodePromise = new Promise((passResolve, passReject) => {
 					passReject;
 					passResolve(data);
@@ -178,6 +210,10 @@ class I18n {
 
 				this.languages.set(language, language_map);
 				this.dirtyTs = performance.now();
+
+				// Event: onchange
+				this._callEvent('change');
+
 				resolve(language);
 			}, (reason) => {
 				reject(reason);
@@ -221,6 +257,9 @@ class I18n {
 
 		this.languages.delete(language);
 		this.dirtyTs = performance.now();
+
+		// Event: onchange
+		this._callEvent('change');
 	}
 
 	/** Clear a key from a language.
@@ -250,10 +289,13 @@ class I18n {
 			this.dirtyTs = performance.now();
 		}
 
+		// Event: onchange
+		this._callEvent('change');
+
 		return true;
 	}
 
-	/** Set a key in a language
+	/** Set a key in a language.
      * 
      * @param {string} language Language to edit.
      * @param {string} key Key to set.
@@ -282,10 +324,13 @@ class I18n {
 			this.dirtyTs = performance.now();
 		}
 
+		// Event: onchange
+		this._callEvent('change');
+
 		return true;
 	}
 
-	/** Get a key in a language
+	/** Get a key in a language.
      * 
      * @param {string} language 
      * @param {string} key 
@@ -300,6 +345,50 @@ class I18n {
 		// Get Key
 		let language_map = this.languages.get(language);
 		return language_map.get(key);
+	}
+
+	/** Hook into an event.
+	 * 
+	 * @param {string} event Event to hook into.
+	 * @param {function} callback Callback to call.
+	 * @return {string} Id of the event (for unhooking).
+	 */
+	hook(event, callback) {
+		if (typeof (event) != 'string') {
+			throw 'event must be a string';
+		}
+		event = event.toLowerCase();
+		if (typeof (callback) != 'function') {
+			throw 'callback must be a function';
+		}
+		if (this.events[event] == undefined) {
+			throw 'event is unknown';
+		}
+
+		let uid = this._uuid();
+		this.events[event].set(uid, callback);
+
+		return uid;
+	}
+
+	unhook(event, callbackid) {
+		if (typeof (event) != 'string') {
+			throw 'event must be a string';
+		}
+		event = event.toLowerCase();
+		if (typeof (event) != 'number') {
+			throw 'callbackid must be a number';
+		}
+		if (this.events[event] == undefined) {
+			throw 'event is unknown';
+		}
+
+		if (!this.events[event].has(callbackid)) {
+			return false;
+		}
+
+		this.events[event].remove(callbackid);
+		return true;
 	}
 
 	/** Translate a single string to any loaded language.
@@ -322,6 +411,9 @@ class I18n {
 			if (languageMap.has(key)) {
 				translated = languageMap.get(key);
 				break;
+			} else {
+				// Event: onMissingKey
+				this._callEvent('missingKey', key, language);
 			}
 		}
 
@@ -368,7 +460,7 @@ class I18n {
 			resolve();
 		});
 	}
-	
+
 	// Private Functions
 	_verifyLanguageKnown(language) {
 		if (!this.languages.has(language)) {
@@ -482,12 +574,14 @@ class I18n {
 
 		// Create a new chain without relying on our own function.
 		let chain = new Array();
+		let missing = new Array();
 		chain.push(language); // Chains always contain the language itself.
 
 		// Now we walk through the chain manually, modifying it as we go.
 		for (let pos = 0; pos < chain.length; pos++) {
 			// Check if the language is loaded, if not skip it.
 			if (!this.languages.has(chain[pos])) {
+				missing.push(chain[pos]);
 				continue;
 			}
 			let languageMap = this.languages.get(chain[pos]);
@@ -509,21 +603,31 @@ class I18n {
 				base = this._sanitizeLanguage(base);
 				if (!chain.includes(base) && (this.languages.has(base))) {
 					chain.push(base);
+				} else if (!missing.includes(base) && (!this.languages.has(base))) {
+					missing.push(base);
 				}
 			}
-            
+
 			// Append the global base languages if there are no other languages left.
 			if (pos == (chain.length - 1)) {
 				let baseLanguages = this.baseLanguage;
-				if (typeof(this.baseLanguage) == 'string') {
+				if (typeof (this.baseLanguage) == 'string') {
 					baseLanguages = [this.baseLanguage];
 				}
 				for (let base of baseLanguages) {
 					if (!chain.includes(base) && (this.languages.has(base))) {
 						chain.push(base);
+					} else if (!missing.includes(base) && (!this.languages.has(base))) {
+						missing.push(base);
 					}
 				}
 			}
+		}
+
+		// Trigger event for all missing languages
+		for (let missingLanguage of missing) {
+			// Event: onMissingLanguage
+			this._callEvent('missingLanguage', missingLanguage);
 		}
 
 		// Store.
@@ -531,6 +635,49 @@ class I18n {
 
 		// Return.
 		return chain;
+	}
+
+	/** Generate a UUID compliant string
+	 * 
+	 * Source: https://stackoverflow.com/a/21963136
+	 */
+	_uuid() {
+		const lut = []; for (var i = 0; i < 256; i++) { lut[i] = (i < 16 ? '0' : '') + (i).toString(16); }
+		var d0 = Math.random() * 0xffffffff | 0;
+		var d1 = Math.random() * 0xffffffff | 0;
+		var d2 = Math.random() * 0xffffffff | 0;
+		var d3 = Math.random() * 0xffffffff | 0;
+		return lut[d0 & 0xff] + lut[d0 >> 8 & 0xff] + lut[d0 >> 16 & 0xff] + lut[d0 >> 24 & 0xff] + '-' +
+			lut[d1 & 0xff] + lut[d1 >> 8 & 0xff] + '-' + lut[d1 >> 16 & 0x0f | 0x40] + lut[d1 >> 24 & 0xff] + '-' +
+			lut[d2 & 0x3f | 0x80] + lut[d2 >> 8 & 0xff] + '-' + lut[d2 >> 16 & 0xff] + lut[d2 >> 24 & 0xff] +
+			lut[d3 & 0xff] + lut[d3 >> 8 & 0xff] + lut[d3 >> 16 & 0xff] + lut[d3 >> 24 & 0xff];
+	}
+
+	_callEvent(name) {
+		if (typeof(name) != 'string') {
+			throw 'name must be a string';
+		}
+		name = name.toLowerCase();
+		if (this.events[name] == undefined) {
+			throw 'invalid event call';
+		}
+		if (this.events[name].size == 0) {
+			return;
+		}
+
+		let args = Array.prototype.slice.call(arguments, 1);
+
+		this.events[name].forEach((value, key, map) => {
+			key; map;
+			if (typeof (value) != 'function') {
+				return;
+			}
+			try {
+				value.apply(null, args);
+			} catch (e) {
+				e;
+			}
+		});
 	}
 }
 
