@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 
 /*
     Internationalization Class for JavaScript
@@ -66,34 +66,34 @@ This cache is refreshed when first attempting to translate to that language,
 
 */
 
-/** 
- * 
+/**
+ *
  * # Events
  * Events are called with multiple parameters, as described below. They can
  *  be used for a variety of things, for example to react to failures or
  *  other errors that are otherwise unrecoverable.
- * 
+ *
  * ## Event: missingKey
  * Called if a key is found to be missing in a language.
  * @param {string} key Key that was determined to be missing.
  * @param {string} language Language that key was not found in.
- * 
+ *
  * ## Event: missingLanguage
  * Called if a language is found to be missing.
  * @param {string} language Language that was determined to be missing.
- * 
+ *
  * ## Event: change
  * Called whenever a change is made to the content of the object.
- * 
+ *
  */
 class I18n {
 	/** Create a new object, ready to be used.
-     * 
-     * @param {string} defaultLanguage Initial base language to base all translations on.
-     * @param {string} baseLanguageKey Key to use for base language overrides. (Default = _base)
-     * @throws Exception on invalid parameters.
-     */
-	constructor(defaultLanguage, baseLanguageKey = '_base') {
+   *
+   * @param {string} defaultLanguage Initial base language to base all translations on.
+   * @param {string} baseLanguageKey Key to use for base language overrides. (Default = _base)
+   * @throws Exception on invalid parameters.
+   */
+	constructor(defaultLanguage, baseLanguageKey = "_base") {
 		this._sanitizeLanguage(defaultLanguage);
 		this._verifyKey(baseLanguageKey);
 
@@ -103,9 +103,9 @@ class I18n {
 		this.baseLanguageKey = baseLanguageKey;
 
 		this.events = {
-			'missingkey': new Map(),
-			'missinglanguage': new Map(),
-			'change': new Map(),
+			missingkey: new Map(),
+			missinglanguage: new Map(),
+			change: new Map()
 		};
 
 		this.dirtyTs = performance.now();
@@ -113,59 +113,59 @@ class I18n {
 	}
 
 	/** Update the global base language.
-	 * 
-	 * @param {string} language 
-	 */
+   *
+   * @param {string} language
+   */
 	setBaseLanguage(language) {
 		this._sanitizeLanguage(language);
 		this.baseLanguage = language;
 		this.dirtyTs = performance.now();
 
 		// Event: onchange
-		this._callEvent('change');
+		this._callEvent("change");
 	}
 
 	/** Retrieve the global base language.
-	 * 
-	 * @return {string} name of base language.
-	 */
+   *
+   * @return {string} name of base language.
+   */
 	getBaseLanguage() {
 		return this.baseLanguage;
 	}
 
 	/** Check if a language is known.
-     * 
-     * @param {string} language Name of the language
-     * @returns {bool} true if known.
-     */
+   *
+   * @param {string} language Name of the language
+   * @returns {bool} true if known.
+   */
 	hasLanguage(language) {
 		language = this._sanitizeLanguage(language);
 		return this.languages.has(language);
 	}
 
 	/** Create a new language.
-     * 
-     * @param {string} language Name of the language.
-     * @throws Exception on invalid parameters.
-     */
+   *
+   * @param {string} language Name of the language.
+   * @throws Exception on invalid parameters.
+   */
 	createLanguage(language) {
 		language = this._sanitizeLanguage(language);
 		this.languages.set(language, new Map());
 		this.dirtyTs = performance.now();
 
 		// Event: onchange
-		this._callEvent('change');
+		this._callEvent("change");
 	}
 
 	/** Load a new language.
-     * 
-     * @param {string} language Name of the language.
-	 * @param {File/Blob/object/string} data Data containing a JSON representation of the language.
-     * @param {string} encoding (Optional) Encoding to use when reading File or Blob.
-     * @returns {Promise}
-     * @throws Exception on invalid parameters or invalid data.
-     */
-	loadLanguage(language, data, encoding = 'utf-8') {
+   *
+   * @param {string} language Name of the language.
+   * @param {File/Blob/object/string} data Data containing a JSON representation of the language.
+   * @param {string} encoding (Optional) Encoding to use when reading File or Blob.
+   * @returns {Promise}
+   * @throws Exception on invalid parameters or invalid data.
+   */
+	loadLanguage(language, data, encoding = "utf-8") {
 		// Verify input.
 		language = this._sanitizeLanguage(language);
 		this._verifyData(data);
@@ -173,60 +173,63 @@ class I18n {
 		return new Promise((resolve, reject) => {
 			// Decode data from various forms.
 			let decodePromise;
-			if ((data instanceof File) || (data instanceof Blob)) {
+			if (data instanceof File || data instanceof Blob) {
 				decodePromise = new Promise((fileResolve, fileReject) => {
 					let freader = new FileReader();
 					freader.onload(() => {
 						fileResolve(JSON.parse(freader.result));
 					});
-					freader.onabort((ev) => {
+					freader.onabort(ev => {
 						fileReject(ev);
 					});
-					freader.onerror((ev) => {
+					freader.onerror(ev => {
 						fileReject(ev);
 					});
 					freader.readAsText(data, encoding);
 				});
-			} else if (typeof (data) == 'string') {
+			} else if (typeof data == "string") {
 				decodePromise = new Promise((parseResolve, parseReject) => {
 					parseReject;
 					parseResolve(JSON.parse(data));
 				});
-			} else if (typeof (data) == 'object') {
+			} else if (typeof data == "object") {
 				decodePromise = new Promise((passResolve, passReject) => {
 					passReject;
 					passResolve(data);
 				});
 			} else {
-				reject('invalid data');
+				reject("invalid data");
 			}
 
 			// Load Data
-			decodePromise.then((result) => {
-				let language_map = new Map();
-				for (let key in result) {
-					language_map.set(key, result[key]);
+			decodePromise.then(
+				result => {
+					let language_map = new Map();
+					for (let key in result) {
+						language_map.set(key, result[key]);
+					}
+
+					this.languages.set(language, language_map);
+					this.dirtyTs = performance.now();
+
+					// Event: onchange
+					this._callEvent("change");
+
+					resolve(language);
+				},
+				reason => {
+					reject(reason);
 				}
-
-				this.languages.set(language, language_map);
-				this.dirtyTs = performance.now();
-
-				// Event: onchange
-				this._callEvent('change');
-
-				resolve(language);
-			}, (reason) => {
-				reject(reason);
-			});
+			);
 		});
 	}
 
 	/** Save a language.
-     * 
-     * @param {string} language Name of the language.
-     * @returns {Promise} Promise that eventually returns the JSON data of the language.
-     * @throws Exception on invalid parameters and missing language.
-     */
+   *
+   * @param {string} language Name of the language.
+   * @returns {Promise} Promise that eventually returns the JSON data of the language.
+   * @throws Exception on invalid parameters and missing language.
+   */
 	saveLanguage(language) {
 		language = this._sanitizeLanguage(language);
 		this._verifyLanguageKnown(language);
@@ -247,10 +250,10 @@ class I18n {
 	}
 
 	/** Destroy/unload a language.
-     * 
-     * @param {string} language Name of the language.
-     * @throws Exception on invalid parameters and missing language.
-     */
+   *
+   * @param {string} language Name of the language.
+   * @throws Exception on invalid parameters and missing language.
+   */
 	destroyLanguage(language) {
 		language = this._sanitizeLanguage(language);
 		this._verifyLanguageKnown(language);
@@ -259,16 +262,16 @@ class I18n {
 		this.dirtyTs = performance.now();
 
 		// Event: onchange
-		this._callEvent('change');
+		this._callEvent("change");
 	}
 
 	/** Clear a key from a language.
-     * 
-     * @param {string} language Language to edit.
-     * @param {string} key Key to clear.
-     * @return {bool} true on success.
-     * @throws Exception on invalid parameters and missing language.
-     */
+   *
+   * @param {string} language Language to edit.
+   * @param {string} key Key to clear.
+   * @return {bool} true on success.
+   * @throws Exception on invalid parameters and missing language.
+   */
 	clearKey(language, key) {
 		// Verify and sanitize input.
 		language = this._sanitizeLanguage(language);
@@ -290,20 +293,20 @@ class I18n {
 		}
 
 		// Event: onchange
-		this._callEvent('change');
+		this._callEvent("change");
 
 		return true;
 	}
 
 	/** Set a key in a language.
-     * 
-     * @param {string} language Language to edit.
-     * @param {string} key Key to set.
-     * @param {*} value New value to set.
-     * @param {bool} force Force the update if the key exists. (Default = true)
-     * @return {bool} true on success.
-     * @throws Exception on invalid parameters and missing language.
-     */
+   *
+   * @param {string} language Language to edit.
+   * @param {string} key Key to set.
+   * @param {*} value New value to set.
+   * @param {bool} force Force the update if the key exists. (Default = true)
+   * @return {bool} true on success.
+   * @throws Exception on invalid parameters and missing language.
+   */
 	setKey(language, key, value, force = true) {
 		// Verify and sanitize input.
 		language = this._sanitizeLanguage(language);
@@ -314,7 +317,7 @@ class I18n {
 
 		// Set key.
 		let language_map = this.languages.get(language);
-		if ((language_map.has(key)) && !force) {
+		if (language_map.has(key) && !force) {
 			return false;
 		}
 		language_map.set(key, value);
@@ -325,18 +328,18 @@ class I18n {
 		}
 
 		// Event: onchange
-		this._callEvent('change');
+		this._callEvent("change");
 
 		return true;
 	}
 
 	/** Get a key in a language.
-     * 
-     * @param {string} language 
-     * @param {string} key 
-     * @return {*} the value
-     * @throws Exception on invalid parameters, missing language and missing key.
-     */
+   *
+   * @param {string} language
+   * @param {string} key
+   * @return {*} the value
+   * @throws Exception on invalid parameters, missing language and missing key.
+   */
 	getKey(language, key) {
 		// Verify and sanitize input.
 		language = this._sanitizeLanguage(language);
@@ -348,21 +351,21 @@ class I18n {
 	}
 
 	/** Hook into an event.
-	 * 
-	 * @param {string} event Event to hook into.
-	 * @param {function} callback Callback to call.
-	 * @return {string} Id of the event (for unhooking).
-	 */
+   *
+   * @param {string} event Event to hook into.
+   * @param {function} callback Callback to call.
+   * @return {string} Id of the event (for unhooking).
+   */
 	hook(event, callback) {
-		if (typeof (event) != 'string') {
-			throw 'event must be a string';
+		if (typeof event != "string") {
+			throw "event must be a string";
 		}
 		event = event.toLowerCase();
-		if (typeof (callback) != 'function') {
-			throw 'callback must be a function';
+		if (typeof callback != "function") {
+			throw "callback must be a function";
 		}
 		if (this.events[event] == undefined) {
-			throw 'event is unknown';
+			throw "event is unknown";
 		}
 
 		let uid = this._uuid();
@@ -372,15 +375,15 @@ class I18n {
 	}
 
 	unhook(event, callbackid) {
-		if (typeof (event) != 'string') {
-			throw 'event must be a string';
+		if (typeof event != "string") {
+			throw "event must be a string";
 		}
 		event = event.toLowerCase();
-		if (typeof (event) != 'number') {
-			throw 'callbackid must be a number';
+		if (typeof event != "number") {
+			throw "callbackid must be a number";
 		}
 		if (this.events[event] == undefined) {
-			throw 'event is unknown';
+			throw "event is unknown";
 		}
 
 		if (!this.events[event].has(callbackid)) {
@@ -392,12 +395,12 @@ class I18n {
 	}
 
 	/** Translate a single string to any loaded language.
-     * 
-     * @param {string} key String to translate
-     * @param {string} language Language to translate to
-     * @return {string} Translated string, or if failed the string plus the language appended.
-     * @throws Exception on invalid parameters.
-     */
+   *
+   * @param {string} key String to translate
+   * @param {string} language Language to translate to
+   * @return {string} Translated string, or if failed the string plus the language appended.
+   * @throws Exception on invalid parameters.
+   */
 	translate(key, language) {
 		// Verify and sanitize input.
 		language = this._sanitizeLanguage(language);
@@ -413,7 +416,7 @@ class I18n {
 				break;
 			} else {
 				// Event: onMissingKey
-				this._callEvent('missingKey', key, language);
+				this._callEvent("missingKey", key, language);
 			}
 		}
 
@@ -421,26 +424,31 @@ class I18n {
 	}
 
 	/** Automatically translate the entire page using the specified property on elements.
-     * 
-     * @param {string} language Language to translate to
-     * @param {string} property Property to search for (default 'data-i18n')
-     * @param {function} resolver Function to call to find the proper translation, called with parameters ({string}language, {string}key, {Node}element) and must return a string.
-     * @param {function} applier Function to call to apply the proper translation, called with parameters ({string}language, {string}key, {string}translation, {Node}element) and must return a boolean.
-     * @returns {Promise} resolved when successful, rejected if applier returns false.
-     * @throws Exception on invalid parameters.
-     */
-	domTranslate(language, property = 'data-i18n', resolver = undefined, applier = undefined) {
+   *
+   * @param {string} language Language to translate to
+   * @param {string} property Property to search for (default 'data-i18n')
+   * @param {function} resolver Function to call to find the proper translation, called with parameters ({string}language, {string}key, {Node}element) and must return a string.
+   * @param {function} applier Function to call to apply the proper translation, called with parameters ({string}language, {string}key, {string}translation, {Node}element) and must return a boolean.
+   * @returns {Promise} resolved when successful, rejected if applier returns false.
+   * @throws Exception on invalid parameters.
+   */
+	domTranslate(
+		language,
+		property = "data-i18n",
+		resolver = undefined,
+		applier = undefined
+	) {
 		language = this._sanitizeLanguage(language);
-		if ((resolver != undefined) && (typeof (resolver) != 'function')) {
-			throw 'resolver must be a function';
+		if (resolver != undefined && typeof resolver != "function") {
+			throw "resolver must be a function";
 		} else if (resolver == undefined) {
 			let self = this;
 			resolver = (language, key, el) => {
 				return self._defaultResolver(language, key, el);
 			};
 		}
-		if ((applier != undefined) && (typeof (applier) != 'function')) {
-			throw 'applier must be a function';
+		if (applier != undefined && typeof applier != "function") {
+			throw "applier must be a function";
 		} else if (applier == undefined) {
 			let self = this;
 			applier = (language, key, translation, el) => {
@@ -464,15 +472,15 @@ class I18n {
 	// Private Functions
 	_verifyLanguageKnown(language) {
 		if (!this.languages.has(language)) {
-			throw 'language unknown';
+			throw "language unknown";
 		}
 	}
 
 	_verifyKey(key) {
-		if (typeof (key) == 'string') {
+		if (typeof key == "string") {
 			return;
 		}
-		throw 'key must be of type string';
+		throw "key must be of type string";
 	}
 
 	_verifyKeyKnown(language, key) {
@@ -480,15 +488,15 @@ class I18n {
 		this._verifyKey(key);
 
 		if (!this.languages.get(language).has(key)) {
-			throw 'key unknown in language';
+			throw "key unknown in language";
 		}
 	}
 
 	_verifyData(data) {
-		if (typeof (data) == 'string') {
+		if (typeof data == "string") {
 			return;
 		}
-		if (typeof (data) == 'object') {
+		if (typeof data == "object") {
 			return;
 		}
 		if (data instanceof File) {
@@ -497,14 +505,14 @@ class I18n {
 		if (data instanceof Blob) {
 			return;
 		}
-		throw 'data must be of type string, object, File or Blob';
+		throw "data must be of type string, object, File or Blob";
 	}
 
 	_sanitizeLanguage(language) {
 		try {
 			this._verifyKey(language);
 		} catch (e) {
-			throw 'language must be of type string';
+			throw "language must be of type string";
 		}
 		return language.toLowerCase();
 	}
@@ -524,35 +532,35 @@ class I18n {
 	}
 
 	/** Caches the necessary language chain for translation.
-     * 
-     * Creates and returns a language chain required for translation, avoiding
-     *  recursive loops that never end in the process. The chain will not 
-     *  evalute the entire branch first, instead it will check all branches
-     *  and then list the childs of those branches. This is an expensive
-     *  operation and should only be done once on every language update.
-     * 
-     * Example:
-     *  de-DE +- en-GB - en-US - de-DE (- en-GB, en-US, ... [recursive])
-     *        \- en-US - de-DE (- en-GB, en-US, ... [recursive])
-     * Result: [de-DE, en-GB, en-US]
-     * Explanation: de-DE depends on both en-GB and en-US, and will check both
-     *  before considering the next branch. Since all dependencies are resolved
-     *  early, a recursive lookup is prevented here.
-     * 
-     * Example:
-     *  de-BE +- de-DE - en-GB - en-US 
-	 *        +- en-GB - en-US
-	 *        +- de-AU - de-DE - en-GB - en-US
-	 *        +- en-US
-	 * Result: [de-Be, de-DE, en-GB, de-AU, en-US]
-	 * Explanation: de-BE depends on [de-DE, en-GB, de-AU, en-US], resolving 
-	 *  de-DE returns en-GB (if loaded), which we already have. en-GB resolves
-	 *  to en-US, which we also already have. de-AU resolves to de-DE, also 
-	 *  known. And finally en-US resolves to nothing as the global base language.
-     * 
-     * @param {string} language 
-     * @returns {array} Translation chain
-     */
+   *
+   * Creates and returns a language chain required for translation, avoiding
+   *  recursive loops that never end in the process. The chain will not
+   *  evalute the entire branch first, instead it will check all branches
+   *  and then list the childs of those branches. This is an expensive
+   *  operation and should only be done once on every language update.
+   *
+   * Example:
+   *  de-DE +- en-GB - en-US - de-DE (- en-GB, en-US, ... [recursive])
+   *        \- en-US - de-DE (- en-GB, en-US, ... [recursive])
+   * Result: [de-DE, en-GB, en-US]
+   * Explanation: de-DE depends on both en-GB and en-US, and will check both
+   *  before considering the next branch. Since all dependencies are resolved
+   *  early, a recursive lookup is prevented here.
+   *
+   * Example:
+   *  de-BE +- de-DE - en-GB - en-US
+   *        +- en-GB - en-US
+   *        +- de-AU - de-DE - en-GB - en-US
+   *        +- en-US
+   * Result: [de-Be, de-DE, en-GB, de-AU, en-US]
+   * Explanation: de-BE depends on [de-DE, en-GB, de-AU, en-US], resolving
+   *  de-DE returns en-GB (if loaded), which we already have. en-GB resolves
+   *  to en-US, which we also already have. de-AU resolves to de-DE, also
+   *  known. And finally en-US resolves to nothing as the global base language.
+   *
+   * @param {string} language
+   * @returns {array} Translation chain
+   */
 	_cacheChain(language) {
 		// This caches a chain so that we do not have to rebuild this every
 		//  lookup. It is important that there are no recursive loops in this
@@ -593,7 +601,7 @@ class I18n {
 			let baseLanguages = languageMap.get(this.baseLanguageKey);
 
 			// Convert to array for for...in.
-			if (typeof (baseLanguages) == 'string') {
+			if (typeof baseLanguages == "string") {
 				baseLanguages = [baseLanguages];
 			} else if (!(baseLanguages instanceof Array)) {
 				continue;
@@ -601,23 +609,23 @@ class I18n {
 
 			for (let base of baseLanguages) {
 				base = this._sanitizeLanguage(base);
-				if (!chain.includes(base) && (this.languages.has(base))) {
+				if (!chain.includes(base) && this.languages.has(base)) {
 					chain.push(base);
-				} else if (!missing.includes(base) && (!this.languages.has(base))) {
+				} else if (!missing.includes(base) && !this.languages.has(base)) {
 					missing.push(base);
 				}
 			}
 
 			// Append the global base languages if there are no other languages left.
-			if (pos == (chain.length - 1)) {
+			if (pos == chain.length - 1) {
 				let baseLanguages = this.baseLanguage;
-				if (typeof (this.baseLanguage) == 'string') {
+				if (typeof this.baseLanguage == "string") {
 					baseLanguages = [this.baseLanguage];
 				}
 				for (let base of baseLanguages) {
-					if (!chain.includes(base) && (this.languages.has(base))) {
+					if (!chain.includes(base) && this.languages.has(base)) {
 						chain.push(base);
-					} else if (!missing.includes(base) && (!this.languages.has(base))) {
+					} else if (!missing.includes(base) && !this.languages.has(base)) {
 						missing.push(base);
 					}
 				}
@@ -627,7 +635,7 @@ class I18n {
 		// Trigger event for all missing languages
 		for (let missingLanguage of missing) {
 			// Event: onMissingLanguage
-			this._callEvent('missingLanguage', missingLanguage);
+			this._callEvent("missingLanguage", missingLanguage);
 		}
 
 		// Store.
@@ -638,28 +646,49 @@ class I18n {
 	}
 
 	/** Generate a UUID compliant string
-	 * 
-	 * Source: https://stackoverflow.com/a/21963136
-	 */
+   *
+   * Source: https://stackoverflow.com/a/21963136
+   */
 	_uuid() {
-		const lut = []; for (var i = 0; i < 256; i++) { lut[i] = (i < 16 ? '0' : '') + (i).toString(16); }
-		var d0 = Math.random() * 0xffffffff | 0;
-		var d1 = Math.random() * 0xffffffff | 0;
-		var d2 = Math.random() * 0xffffffff | 0;
-		var d3 = Math.random() * 0xffffffff | 0;
-		return lut[d0 & 0xff] + lut[d0 >> 8 & 0xff] + lut[d0 >> 16 & 0xff] + lut[d0 >> 24 & 0xff] + '-' +
-			lut[d1 & 0xff] + lut[d1 >> 8 & 0xff] + '-' + lut[d1 >> 16 & 0x0f | 0x40] + lut[d1 >> 24 & 0xff] + '-' +
-			lut[d2 & 0x3f | 0x80] + lut[d2 >> 8 & 0xff] + '-' + lut[d2 >> 16 & 0xff] + lut[d2 >> 24 & 0xff] +
-			lut[d3 & 0xff] + lut[d3 >> 8 & 0xff] + lut[d3 >> 16 & 0xff] + lut[d3 >> 24 & 0xff];
+		const lut = [];
+		for (var i = 0; i < 256; i++) {
+			lut[i] = (i < 16 ? "0" : "") + i.toString(16);
+		}
+		var d0 = (Math.random() * 0xffffffff) | 0;
+		var d1 = (Math.random() * 0xffffffff) | 0;
+		var d2 = (Math.random() * 0xffffffff) | 0;
+		var d3 = (Math.random() * 0xffffffff) | 0;
+		return (
+			lut[d0 & 0xff] +
+			lut[(d0 >> 8) & 0xff] +
+			lut[(d0 >> 16) & 0xff] +
+			lut[(d0 >> 24) & 0xff] +
+			"-" +
+			lut[d1 & 0xff] +
+			lut[(d1 >> 8) & 0xff] +
+			"-" +
+			lut[((d1 >> 16) & 0x0f) | 0x40] +
+			lut[(d1 >> 24) & 0xff] +
+			"-" +
+			lut[(d2 & 0x3f) | 0x80] +
+			lut[(d2 >> 8) & 0xff] +
+			"-" +
+			lut[(d2 >> 16) & 0xff] +
+			lut[(d2 >> 24) & 0xff] +
+			lut[d3 & 0xff] +
+			lut[(d3 >> 8) & 0xff] +
+			lut[(d3 >> 16) & 0xff] +
+			lut[(d3 >> 24) & 0xff]
+		);
 	}
 
 	_callEvent(name) {
-		if (typeof(name) != 'string') {
-			throw 'name must be a string';
+		if (typeof name != "string") {
+			throw "name must be a string";
 		}
 		name = name.toLowerCase();
 		if (this.events[name] == undefined) {
-			throw 'invalid event call';
+			throw "invalid event call";
 		}
 		if (this.events[name].size == 0) {
 			return;
@@ -668,8 +697,9 @@ class I18n {
 		let args = Array.prototype.slice.call(arguments, 1);
 
 		this.events[name].forEach((value, key, map) => {
-			key; map;
-			if (typeof (value) != 'function') {
+			key;
+			map;
+			if (typeof value != "function") {
 				return;
 			}
 			try {
@@ -682,8 +712,8 @@ class I18n {
 }
 
 // Compatible with Node.js and Browsers
-if (typeof (module) != 'undefined') {
+if (typeof module != "undefined") {
 	module.exports = exports = {
-		'I18n': I18n
+		I18n: I18n
 	};
 }

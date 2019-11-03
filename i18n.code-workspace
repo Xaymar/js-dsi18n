@@ -1,0 +1,19 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"editor.defaultFormatter": "dbaeumer.vscode-eslint",
+		"editor.formatOnPaste": true,
+		"editor.formatOnSave": true,
+		"[javascript]": {
+			"editor.defaultFormatter": "vscode.typescript-language-features"
+		},
+		"typescript.preferences.quoteStyle": "double",
+		"typescript.format.semicolons": "insert",
+		"javascript.preferences.quoteStyle": "double",
+		"javascript.format.semicolons": "insert"
+	}
+}
