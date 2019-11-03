@@ -2,19 +2,7 @@
 
 /*
     Internationalization Class for JavaScript
-    Copyright (C) 2018 Michael Fabian 'Xaymar' Dirks <info@xaymar.com>
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, version 3 of the License.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    Copyright (C) 2018-2019 Michael Fabian 'Xaymar' Dirks <info@xaymar.com>
 */
 
 /*
@@ -88,11 +76,11 @@ This cache is refreshed when first attempting to translate to that language,
  */
 class I18n {
 	/** Create a new object, ready to be used.
-   *
-   * @param {string} defaultLanguage Initial base language to base all translations on.
-   * @param {string} baseLanguageKey Key to use for base language overrides. (Default = _base)
-   * @throws Exception on invalid parameters.
-   */
+	 *
+	 * @param {string} defaultLanguage Initial base language to base all translations on.
+	 * @param {string} baseLanguageKey Key to use for base language overrides. (Default = _base)
+	 * @throws Exception on invalid parameters.
+	 */
 	constructor(defaultLanguage, baseLanguageKey = "_base") {
 		this._sanitizeLanguage(defaultLanguage);
 		this._verifyKey(baseLanguageKey);
@@ -113,9 +101,9 @@ class I18n {
 	}
 
 	/** Update the global base language.
-   *
-   * @param {string} language
-   */
+	 *
+	 * @param {string} language
+	 */
 	setBaseLanguage(language) {
 		this._sanitizeLanguage(language);
 		this.baseLanguage = language;
@@ -126,28 +114,28 @@ class I18n {
 	}
 
 	/** Retrieve the global base language.
-   *
-   * @return {string} name of base language.
-   */
+	 *
+	 * @return {string} name of base language.
+	 */
 	getBaseLanguage() {
 		return this.baseLanguage;
 	}
 
 	/** Check if a language is known.
-   *
-   * @param {string} language Name of the language
-   * @returns {bool} true if known.
-   */
+	 *
+	 * @param {string} language Name of the language
+	 * @returns {bool} true if known.
+	 */
 	hasLanguage(language) {
 		language = this._sanitizeLanguage(language);
 		return this.languages.has(language);
 	}
 
 	/** Create a new language.
-   *
-   * @param {string} language Name of the language.
-   * @throws Exception on invalid parameters.
-   */
+	 *
+	 * @param {string} language Name of the language.
+	 * @throws Exception on invalid parameters.
+	 */
 	createLanguage(language) {
 		language = this._sanitizeLanguage(language);
 		this.languages.set(language, new Map());
@@ -158,13 +146,13 @@ class I18n {
 	}
 
 	/** Load a new language.
-   *
-   * @param {string} language Name of the language.
-   * @param {File/Blob/object/string} data Data containing a JSON representation of the language.
-   * @param {string} encoding (Optional) Encoding to use when reading File or Blob.
-   * @returns {Promise}
-   * @throws Exception on invalid parameters or invalid data.
-   */
+	 *
+	 * @param {string} language Name of the language.
+	 * @param {File/Blob/object/string} data Data containing a JSON representation of the language.
+	 * @param {string} encoding (Optional) Encoding to use when reading File or Blob.
+	 * @returns {Promise}
+	 * @throws Exception on invalid parameters or invalid data.
+	 */
 	loadLanguage(language, data, encoding = "utf-8") {
 		// Verify input.
 		language = this._sanitizeLanguage(language);
@@ -225,11 +213,11 @@ class I18n {
 	}
 
 	/** Save a language.
-   *
-   * @param {string} language Name of the language.
-   * @returns {Promise} Promise that eventually returns the JSON data of the language.
-   * @throws Exception on invalid parameters and missing language.
-   */
+	 *
+	 * @param {string} language Name of the language.
+	 * @returns {Promise} Promise that eventually returns the JSON data of the language.
+	 * @throws Exception on invalid parameters and missing language.
+	 */
 	saveLanguage(language) {
 		language = this._sanitizeLanguage(language);
 		this._verifyLanguageKnown(language);
@@ -250,10 +238,10 @@ class I18n {
 	}
 
 	/** Destroy/unload a language.
-   *
-   * @param {string} language Name of the language.
-   * @throws Exception on invalid parameters and missing language.
-   */
+	 *
+	 * @param {string} language Name of the language.
+	 * @throws Exception on invalid parameters and missing language.
+	 */
 	destroyLanguage(language) {
 		language = this._sanitizeLanguage(language);
 		this._verifyLanguageKnown(language);
@@ -266,12 +254,12 @@ class I18n {
 	}
 
 	/** Clear a key from a language.
-   *
-   * @param {string} language Language to edit.
-   * @param {string} key Key to clear.
-   * @return {bool} true on success.
-   * @throws Exception on invalid parameters and missing language.
-   */
+	 *
+	 * @param {string} language Language to edit.
+	 * @param {string} key Key to clear.
+	 * @return {bool} true on success.
+	 * @throws Exception on invalid parameters and missing language.
+	 */
 	clearKey(language, key) {
 		// Verify and sanitize input.
 		language = this._sanitizeLanguage(language);
@@ -299,14 +287,14 @@ class I18n {
 	}
 
 	/** Set a key in a language.
-   *
-   * @param {string} language Language to edit.
-   * @param {string} key Key to set.
-   * @param {*} value New value to set.
-   * @param {bool} force Force the update if the key exists. (Default = true)
-   * @return {bool} true on success.
-   * @throws Exception on invalid parameters and missing language.
-   */
+	 *
+	 * @param {string} language Language to edit.
+	 * @param {string} key Key to set.
+	 * @param {*} value New value to set.
+	 * @param {bool} force Force the update if the key exists. (Default = true)
+	 * @return {bool} true on success.
+	 * @throws Exception on invalid parameters and missing language.
+	 */
 	setKey(language, key, value, force = true) {
 		// Verify and sanitize input.
 		language = this._sanitizeLanguage(language);
@@ -334,12 +322,12 @@ class I18n {
 	}
 
 	/** Get a key in a language.
-   *
-   * @param {string} language
-   * @param {string} key
-   * @return {*} the value
-   * @throws Exception on invalid parameters, missing language and missing key.
-   */
+	 *
+	 * @param {string} language
+	 * @param {string} key
+	 * @return {*} the value
+	 * @throws Exception on invalid parameters, missing language and missing key.
+	 */
 	getKey(language, key) {
 		// Verify and sanitize input.
 		language = this._sanitizeLanguage(language);
@@ -351,11 +339,11 @@ class I18n {
 	}
 
 	/** Hook into an event.
-   *
-   * @param {string} event Event to hook into.
-   * @param {function} callback Callback to call.
-   * @return {string} Id of the event (for unhooking).
-   */
+	 *
+	 * @param {string} event Event to hook into.
+	 * @param {function} callback Callback to call.
+	 * @return {string} Id of the event (for unhooking).
+	 */
 	hook(event, callback) {
 		if (typeof event != "string") {
 			throw "event must be a string";
@@ -395,12 +383,12 @@ class I18n {
 	}
 
 	/** Translate a single string to any loaded language.
-   *
-   * @param {string} key String to translate
-   * @param {string} language Language to translate to
-   * @return {string} Translated string, or if failed the string plus the language appended.
-   * @throws Exception on invalid parameters.
-   */
+	 *
+	 * @param {string} key String to translate
+	 * @param {string} language Language to translate to
+	 * @return {string} Translated string, or if failed the string plus the language appended.
+	 * @throws Exception on invalid parameters.
+	 */
 	translate(key, language) {
 		// Verify and sanitize input.
 		language = this._sanitizeLanguage(language);
@@ -424,14 +412,14 @@ class I18n {
 	}
 
 	/** Automatically translate the entire page using the specified property on elements.
-   *
-   * @param {string} language Language to translate to
-   * @param {string} property Property to search for (default 'data-i18n')
-   * @param {function} resolver Function to call to find the proper translation, called with parameters ({string}language, {string}key, {Node}element) and must return a string.
-   * @param {function} applier Function to call to apply the proper translation, called with parameters ({string}language, {string}key, {string}translation, {Node}element) and must return a boolean.
-   * @returns {Promise} resolved when successful, rejected if applier returns false.
-   * @throws Exception on invalid parameters.
-   */
+	 *
+	 * @param {string} language Language to translate to
+	 * @param {string} property Property to search for (default 'data-i18n')
+	 * @param {function} resolver Function to call to find the proper translation, called with parameters ({string}language, {string}key, {Node}element) and must return a string.
+	 * @param {function} applier Function to call to apply the proper translation, called with parameters ({string}language, {string}key, {string}translation, {Node}element) and must return a boolean.
+	 * @returns {Promise} resolved when successful, rejected if applier returns false.
+	 * @throws Exception on invalid parameters.
+	 */
 	domTranslate(
 		language,
 		property = "data-i18n",
@@ -532,35 +520,35 @@ class I18n {
 	}
 
 	/** Caches the necessary language chain for translation.
-   *
-   * Creates and returns a language chain required for translation, avoiding
-   *  recursive loops that never end in the process. The chain will not
-   *  evalute the entire branch first, instead it will check all branches
-   *  and then list the childs of those branches. This is an expensive
-   *  operation and should only be done once on every language update.
-   *
-   * Example:
-   *  de-DE +- en-GB - en-US - de-DE (- en-GB, en-US, ... [recursive])
-   *        \- en-US - de-DE (- en-GB, en-US, ... [recursive])
-   * Result: [de-DE, en-GB, en-US]
-   * Explanation: de-DE depends on both en-GB and en-US, and will check both
-   *  before considering the next branch. Since all dependencies are resolved
-   *  early, a recursive lookup is prevented here.
-   *
-   * Example:
-   *  de-BE +- de-DE - en-GB - en-US
-   *        +- en-GB - en-US
-   *        +- de-AU - de-DE - en-GB - en-US
-   *        +- en-US
-   * Result: [de-Be, de-DE, en-GB, de-AU, en-US]
-   * Explanation: de-BE depends on [de-DE, en-GB, de-AU, en-US], resolving
-   *  de-DE returns en-GB (if loaded), which we already have. en-GB resolves
-   *  to en-US, which we also already have. de-AU resolves to de-DE, also
-   *  known. And finally en-US resolves to nothing as the global base language.
-   *
-   * @param {string} language
-   * @returns {array} Translation chain
-   */
+	 *
+	 * Creates and returns a language chain required for translation, avoiding
+	 *  recursive loops that never end in the process. The chain will not
+	 *  evalute the entire branch first, instead it will check all branches
+	 *  and then list the childs of those branches. This is an expensive
+	 *  operation and should only be done once on every language update.
+	 *
+	 * Example:
+	 *  de-DE +- en-GB - en-US - de-DE (- en-GB, en-US, ... [recursive])
+	 *        \- en-US - de-DE (- en-GB, en-US, ... [recursive])
+	 * Result: [de-DE, en-GB, en-US]
+	 * Explanation: de-DE depends on both en-GB and en-US, and will check both
+	 *  before considering the next branch. Since all dependencies are resolved
+	 *  early, a recursive lookup is prevented here.
+	 *
+	 * Example:
+	 *  de-BE +- de-DE - en-GB - en-US
+	 *        +- en-GB - en-US
+	 *        +- de-AU - de-DE - en-GB - en-US
+	 *        +- en-US
+	 * Result: [de-Be, de-DE, en-GB, de-AU, en-US]
+	 * Explanation: de-BE depends on [de-DE, en-GB, de-AU, en-US], resolving
+	 *  de-DE returns en-GB (if loaded), which we already have. en-GB resolves
+	 *  to en-US, which we also already have. de-AU resolves to de-DE, also
+	 *  known. And finally en-US resolves to nothing as the global base language.
+	 *
+	 * @param {string} language
+	 * @returns {array} Translation chain
+	 */
 	_cacheChain(language) {
 		// This caches a chain so that we do not have to rebuild this every
 		//  lookup. It is important that there are no recursive loops in this
@@ -646,9 +634,9 @@ class I18n {
 	}
 
 	/** Generate a UUID compliant string
-   *
-   * Source: https://stackoverflow.com/a/21963136
-   */
+	 *
+	 * Source: https://stackoverflow.com/a/21963136
+	 */
 	_uuid() {
 		const lut = [];
 		for (var i = 0; i < 256; i++) {
